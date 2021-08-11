@@ -31,12 +31,10 @@ XOR	| 0001 0001 -> 16+1 -> 17
 对于不同来源的MAC的数据，异或哈希能很平均地分担到各个网卡。
 ```
 
-Q1：为什么是XOR异或，如果用与或呢？  
-
+Q1：为什么是XOR异或，如果用与或呢？
 A1：因为在数学方面来说，与或的真值分布不均匀，与(同1出1  1的分布为25%)，或(同0出  0的分布为25%)，而异或能保证50%:50%的分布，可以保证哈希过程中更好的随机性，进而避免了哈希冲突发生的概率。
 
-Q2：既然通过异或哈希实现了负载均衡，那么Bond2怎样实现了冗余？  
-
+Q2：既然通过异或哈希实现了负载均衡，那么Bond2怎样实现了冗余？
 A2：在Bond2中，异或哈希算法是对Slave数量取余，其实是对当前活动的Slave取余，如果对于正常运行状态的4个Slave的Bond2，其中Slave_1宕掉了，此时Slave数量会变为3，同时Slave的顺位也发生变化：
 [ 0 1 2 3 ] 正常状态-> [ 0 2 3 ] Slave1宕 -> [ 0 1 2 ] 新正常状态
 此时原本分配给Slave_1的数据由新的Slave_1接收。  
@@ -78,77 +76,116 @@ xmit_hash_policy=layer3+4
 特点：该模式包含了Bond5模式，同时加上接收负载均衡（receive load balance），同样不需要交换机的支持。接收负载均衡是通过ARP协商实现的。bonding驱动截获本机发送的ARP应答，并把源硬件地址改写为bond中某个slave的唯一硬件地址，从而使得不同的对端使用不同的硬件地址进行通信。
 缺点：ARP协商中存在一些问题（未深入了解，仅列出）
 # 3. 绑定的实现
-## 3.1. 修改多个物理网卡配置文件
+<font color="red">注意，本次实验使用Cent OS 7.9版本，其他版本/发行版进行实验可能会影响实验进程，请悉知！</font>
+## 3.1. 关闭NetworkManager
 ```bash
-# 以bond1举例
-# vim /etc/sysconfig/network-script/ifcfg-ens33
-HWADDR=00:0C:29:E0:B9:BC
-MACADDR=preserve
-TYPE=Ethernet
-NAME="bond1 slave 1"
-UUID=ef2b8ef8-531f-4f09-902d-2442f096cb12
-DEVICE=ens33
-ONBOOT=yes
-MASTER=bond1
-SLAVE=yes
-# vim /etc/sysconfig/network-script/ifcfg-ens34
-HWADDR=00:0C:29:E0:B9:C6
-MACADDR=preserve
-TYPE=Ethernet
-NAME="bond1 slave 2"
-UUID=9a471884-2e42-4dd1-a876-1ad7aeedcc2f
-DEVICE=ens34
-ONBOOT=yes
-MASTER=bond1
-SLAVE=yes
+systemctl disable NetworkManager
+systemctl stop NetworkManager
 ```
-## 3.2. 新建bond网卡配置文件，配置bond参数
+## 3.2. 记录网卡mac（硬件地址）（至少选择两个网卡）
 ```bash
-# 网络部分
+# 人工查看字段
+ip a
+# 用正则直接筛选
+ip a | egrep -o '.*: | link\/ether .{17}'
+```
+## 3.3. 备份原网卡配置文件
+```bash
+cd /etc/sysconfig/network-scripts/
+mkdir bak/ && cp ifcfg-* bak/
+```
+## 3.4. 创建bond相关配置文件
+```bash
+# 以bond0为例，bond命名尽量符合当前bond模式，以免造成不必要的困扰
+touch ifcfg-bond0_slave_1 ifcfg-bond0_slave_2 ifcfg-Bond_connection_1
+```
+## 3.5. 修改网卡配置文件
+```bash
+# 为防止篇幅臃肿，将配置文件修改部分归置在本章结束。
+vi ifcfg-ens33
+vi ifcfg-ens34
+vi ifcfg-bond0_slave_1
+vi ifcfg-bond0_slave_1
+vi ifcfg-Bond_connection_1
+```
+## 3.6. 重启网络服务 
+```bash
+systemctl restart network
+```
+## 3.7 补充：配置文件修改
+### 3.7.1. ifcfg-X 和 ifcfg-Y
+```bash
+# General setting
+PROXY_METHOD=none
+BROWSER_ONLY=no
 BOOTPROTO=none
-IPADDR=192.168.157.203
-PREFIX=24
-GATEWAY=192.168.157.2
-DNS1=8.8.8.8
-# IPV6设置
+DEFROUTE=yes
+ONBOOT=no
+IPV4_FAILURE_FATAL=no
+TYPE=Ethernet
+
+# IPV6 setting
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+
+# --- NEED TO CHANGE ---
+# Device info
+NAME=X
+DEVICE=X
+```
+### 3.7.2. bond0_slave_1 和 bond0_slave_2.
+```bash
+# General setting
+TYPE=Ethernet
+MACADDR=preserve
+ONBOOT=yes
+SLAVE=yes
+
+# --- NEED TO CHANGE ---
+# Device info
+DEVICE=X
+HWADDR=XXX
+# Slave info
+NAME="bond0 slave 1"
+MASTER=bond0
+```
+### 3.7.3. Bond connection 1
+```bash
+# General setting
+TYPE=Bond
+BONDING_MASTER=yes
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+ONBOOT=yes
+IPV4_FAILURE_FATAL=no
+
+# IPV6 setting
 IPV6INIT=yes
 IPV6_AUTOCONF=yes
 IPV6_DEFROUTE=yes
 IPV6_FAILURE_FATAL=no
 IPV6_PRIVACY=no
 IPV6_ADDR_GEN_MODE=stable-privacy
-DEFROUTE=yes
-IPV4_FAILURE_FATAL=no
-# bond参数部分
-BONDING_OPTS="downdelay=0 miimon=1 mode=active-backup updelay=0"
-TYPE=Bond
-BONDING_MASTER=yes
-PROXY_METHOD=none
-BROWSER_ONLY=no
+
+# --- NEED TO CHANGE ---
+# Device info
 NAME="Bond connection 1"
-UUID=bacf3665-d467-4059-bd33-98d8919a3e41
-DEVICE=bond1
-ONBOOT=yes
-FAIL_OVER_MAC=2
+DEVICE=bond0
+
+# Network setting
+IPADDR=192.168.157.103
+PREFIX=24
+GATEWAY=192.168.157.1
+DNS1=8.8.8.8
+
+# Bond mode and options
+BONDING_OPTS="downdelay=0 miimon=1 mode=balance-rr updelay=0"
 ```
-BONDING_OPTS关键参数：
-```bash
-mode=		： 指定绑定模式0~6，或者对应模式的简称
-
-miimon= 	： 指定ARP链路监控频率，单位是毫秒(ms)
-
-downdelay	： 用于在发现链路故障后，等待一段时间然后禁止一个slave
-
-updelay		： 当发现一个链路恢复时，在激活该链路之前的等待时间
-
-xmit_hash_policy ： 传输策略
-
-```
-## 3.3. 启动bond模块
-```bash
-systemctl network restart
-```
-
 # 4. 绑定实验
 ## 实验准备
 ```bash
@@ -252,5 +289,3 @@ IP        |    11 -> 53       |   53 -> 11    |       /           /
 MAC       |    08 -> 03       |   f9 -> 08    |    f9 -> f9    03 -> 03
 --------------------------------------------------------------------------
 ```
-# 5. 配置文件
-bond文件夹内包含bond0-6（除4外）所有的配置文件
