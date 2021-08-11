@@ -1,0 +1,13 @@
+# General setting
+TYPE=Ethernet
+MACADDR=preserve
+ONBOOT=yes
+SLAVE=yes
+
+# --- NEED TO CHANGE ---
+# Device info
+DEVICE=Y
+HWADDR=YYY
+# Slave info
+NAME="bondZ slave 1"
+MASTER=bondZ
