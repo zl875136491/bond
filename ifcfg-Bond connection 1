@@ -1,0 +1,31 @@
+# General setting
+TYPE=Bond
+BONDING_MASTER=yes
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+ONBOOT=yes
+IPV4_FAILURE_FATAL=no
+
+# IPV6 setting
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_PRIVACY=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+
+# --- NEED TO CHANGE ---
+# Device info
+NAME="Bond connection 1"
+DEVICE=bondZ
+
+# Network setting
+IPADDR=192.168.a.c
+PREFIX=24
+GATEWAY=192.168.a.b
+DNS1=8.8.8.8
+
+# Bond mode and options
+BONDING_OPTS="downdelay=0 miimon=1 mode=Z updelay=0"
