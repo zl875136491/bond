@@ -1,0 +1,20 @@
+# General setting
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+ONBOOT=no
+IPV4_FAILURE_FATAL=no
+TYPE=Ethernet
+
+# IPV6 setting
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+
+# --- NEED TO CHANGE ---
+# Device info
+NAME=Y
+DEVICE=Y
