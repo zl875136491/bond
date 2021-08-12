@@ -1,0 +1,9 @@
+HWADDR=00:0C:29:0B:24:ED
+MACADDR=preserve
+TYPE=Ethernet
+NAME="bond5 slave 2"
+UUID=273c77fd-f0ef-4523-9ba5-380d8d2b8b3e
+DEVICE=ens34
+ONBOOT=yes
+MASTER=bond5
+SLAVE=yes

@@ -1,0 +1,8 @@
+HWADDR=00:0C:29:A1:E0:CF
+TYPE=Ethernet
+NAME="bond2 slave 1"
+UUID=ccca5985-5c6d-4c8e-a8a6-6a3d937c04ce
+DEVICE=ens33
+ONBOOT=yes
+MASTER=bond2
+SLAVE=yes
